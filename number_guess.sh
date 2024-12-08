@@ -6,7 +6,6 @@ echo -e "\nEnter your username:"
 read USER
 
 SECRET_NUMBER=$(( (RANDOM % 1000) + 1 ))
-echo $SECRET_NUMBER
 
 # Check if the user exists
 FIND=$($PSQL "SELECT name FROM users WHERE name='$USER'")
@@ -14,7 +13,8 @@ FIND=$($PSQL "SELECT name FROM users WHERE name='$USER'")
 if [[ -z $FIND ]]; then
   echo "Welcome, $USER! It looks like this is your first time here."
 
-  ADD=$($PSQL "INSERT INTO users(name, games_played, best_game) VALUES('$USER', 0, 1000)")
+  # Set best_game to NULL for first-time users (since we don't know the best score yet)
+  ADD=$($PSQL "INSERT INTO users(name, games_played, best_game) VALUES('$USER', 0, NULL)")
 
   # Prompt for the first guess
   echo "Guess the secret number between 1 and 1000:"
@@ -46,12 +46,12 @@ while true; do
     echo "It's higher than that, guess again:"
   else
     echo "You guessed it in $NUMBER_OF_GUESSES tries. The secret number was $SECRET_NUMBER. Nice job!"
+
+    # Increment games_played
     UPDATE=$($PSQL "UPDATE users SET games_played = games_played + 1 WHERE name='$USER'")
 
- 
-
-
-    if [[ $NUMBER_OF_GUESSES -lt $BEST_GAME ]]; then
+    # If this is the user's best game, update best_game
+    if [[ -z $BEST_GAME || $NUMBER_OF_GUESSES -lt $BEST_GAME ]]; then
       UPDATE_BEST_GAME=$($PSQL "UPDATE users SET best_game = $NUMBER_OF_GUESSES WHERE name='$USER'")
       echo "Congratulations! You set a new best game with $NUMBER_OF_GUESSES guesses."
     fi
