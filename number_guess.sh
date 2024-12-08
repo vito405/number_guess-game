@@ -14,13 +14,14 @@ FIND=$($PSQL "SELECT name FROM users WHERE name='$USER'")
 if [[ -z $FIND ]]; then
   echo "Welcome, $USER! It looks like this is your first time here."
 
-  ADD=$($PSQL "INSERT INTO users(name, games_played) VALUES('$USER', 0)")
+  ADD=$($PSQL "INSERT INTO users(name, games_played, best_game) VALUES('$USER', 0, 1000)")
 
   # Prompt for the first guess
   echo "Guess the secret number between 1 and 1000:"
 else
+  BEST_GAME=$($PSQL "SELECT best_game FROM users WHERE name='$USER'")
   GAMES=$($PSQL "SELECT games_played FROM users WHERE name='$USER'")
-  echo "Welcome back, $USER! You have played $GAMES games, and your best game took <best_game> guesses."
+  echo "Welcome back, $USER! You have played $GAMES games, and your best game took $BEST_GAME guesses."
   echo "Guess the secret number between 1 and 1000:"
 fi
 
@@ -46,6 +47,14 @@ while true; do
   else
     echo "You guessed it in $NUMBER_OF_GUESSES tries. The secret number was $SECRET_NUMBER. Nice job!"
     UPDATE=$($PSQL "UPDATE users SET games_played = games_played + 1 WHERE name='$USER'")
+
+ 
+
+
+    if [[ $NUMBER_OF_GUESSES -lt $BEST_GAME ]]; then
+      UPDATE_BEST_GAME=$($PSQL "UPDATE users SET best_game = $NUMBER_OF_GUESSES WHERE name='$USER'")
+      echo "Congratulations! You set a new best game with $NUMBER_OF_GUESSES guesses."
+    fi
     break
   fi
 done
